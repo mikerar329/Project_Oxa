@@ -8,9 +8,9 @@ from keras.layers import LSTM
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
 
-numpy.random.seed(7)
+numpy.random.seed(329)
 # switch usecols for different datasets
-dataset = pandas.read_csv('PJME_hourly.csv', usecols=[1])
+dataset = pandas.read_csv('COMED_hourly.csv', usecols=[1])
 plt.plot(dataset)
 plt.show()
 
@@ -18,8 +18,10 @@ scaler = MinMaxScaler(feature_range=(0, 1))
 dataset = scaler.fit_transform(dataset)
 
 start_index = int(len(dataset) * 0.9)
-train_size = int(len(dataset) * 0.95)
-train, test = dataset[start_index:train_size, :], dataset[train_size:len(dataset), :]
+# start_index = 0
+train_index = int(len(dataset) * 0.95)
+train_size = int(len(dataset)) - train_index
+train, test = dataset[start_index:train_index, :], dataset[train_index:len(dataset), :]
 print(len(train), len(test))
 
 
@@ -33,13 +35,14 @@ def create_dataset(dataset, look_back=1):
     return numpy.array(dataX), numpy.array(dataY)
 
 
-look_back = 1
+look_back = 2
 
 trainX, trainY = create_dataset(train, look_back)
 testX, testY = create_dataset(test, look_back)
 
 trainX = numpy.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
 testX = numpy.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
+
 
 model = Sequential()
 model.add(LSTM(4, input_shape=(1, look_back)))
@@ -74,12 +77,13 @@ trainPredictPlot[look_back:len(trainPredict) + look_back, :] = trainPredict
 
 testPredictPlot = numpy.empty_like(dataset)
 testPredictPlot[:, :] = numpy.nan
-testPredictPlot[len(trainPredict) + (look_back * 2) + 1:len(dataset) - look_back - start_index, :] = testPredict
+testPredictPlot[len(trainPredict) + (look_back * 2) + 1:len(dataset) - 1 - start_index, :] = testPredict
 
 # plot
 
 plt.plot(scaler.inverse_transform(dataset[start_index:]))
 plt.plot(trainPredictPlot[1:])
 plt.plot(testPredictPlot[1:])
+plt.axvline(x=train_size, c='r', linestyle='--')
 plt.legend(['Original', 'Train', 'Test'], loc='upper right')
 plt.show()
