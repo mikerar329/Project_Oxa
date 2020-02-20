@@ -9,17 +9,18 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
 
 numpy.random.seed(329)
+
 # switch usecols for different datasets
-dataset = pandas.read_csv('COMED_hourly.csv', usecols=[1])
+dataset = pandas.read_csv('cleaned_costs.csv', usecols=[3])
 plt.plot(dataset)
 plt.show()
 
 scaler = MinMaxScaler(feature_range=(0, 1))
 dataset = scaler.fit_transform(dataset)
 
-start_index = int(len(dataset) * 0.9)
-# start_index = 0
-train_index = int(len(dataset) * 0.95)
+# start_index = int(len(dataset) * 0.9)
+start_index = 0
+train_index = int(len(dataset) * 0.8)
 train_size = int(len(dataset)) - train_index
 train, test = dataset[start_index:train_index, :], dataset[train_index:len(dataset), :]
 print(len(train), len(test))
@@ -45,10 +46,20 @@ testX = numpy.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
 
 
 model = Sequential()
-model.add(LSTM(4, input_shape=(1, look_back)))
+model.add(LSTM(40, input_shape=(1, look_back)))
 model.add(Dense(1))
 model.compile(loss='mean_squared_error', optimizer='adam')
-model.fit(trainX, trainY, epochs=3, batch_size=1, verbose=1)
+hist = model.fit(trainX, trainY, epochs=15, batch_size=1, verbose=1, validation_data=[testX, testY])
+
+
+# 456 328
+plt.plot(hist.history['loss'])
+plt.plot(hist.history['val_loss'])
+plt.title('Model loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Val'], loc='upper right')
+plt.show()
 
 # predictions
 trainPredict = model.predict(trainX)
@@ -84,6 +95,6 @@ testPredictPlot[len(trainPredict) + (look_back * 2) + 1:len(dataset) - 1 - start
 plt.plot(scaler.inverse_transform(dataset[start_index:]))
 plt.plot(trainPredictPlot[1:])
 plt.plot(testPredictPlot[1:])
-plt.axvline(x=train_size, c='r', linestyle='--')
+# plt.axvline(x=train_size, c='r', linestyle='--')
 plt.legend(['Original', 'Train', 'Test'], loc='upper right')
 plt.show()
